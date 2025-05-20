@@ -1,0 +1,11 @@
+pymupdf
+spacy
+faker
+transformers
+tokenizers # Added as a common dependency for transformers
+
+# For spaCy Portuguese model (install separately):
+# python -m spacy download pt_core_news_sm
+
+# For packaging (install separately if needed):
+# pyinstaller
