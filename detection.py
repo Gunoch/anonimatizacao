@@ -15,7 +15,8 @@ except OSError:
 # Regular expressions for PII
 CPF_REGEX = r"\d{3}\.?\d{3}\.?\d{3}-?\d{2}"
 PHONE_REGEX = r"(\+?55\s?)?(\(?\d{2}\)?\s?)\d{4,5}-?\d{4}"
-EMAIL_REGEX = r"\b[\w\.-]+@[\w\.-]+\.\w{2,4}\b"
+EMAIL_REGEX = r"\\b[\\w\\.-]+@[\\w\\.-]+\\.\\w{2,4}\\b"
+PADRAO_CPF = re.compile(CPF_REGEX) # Added definition for PADRAO_CPF
 
 # Define PII types for clarity
 PII_TYPES = {
@@ -150,7 +151,7 @@ if __name__ == '__main__':
         if sensitive_data_found:
             print("\nDetected Sensitive Data:")
             for item in sensitive_data_found:
-                print(f'- Text: "{item['text']}", Type: {item['type']}')
+                print(f"- Text: \"{item['text']}\", Type: {item['type']}")
         else:
             print("No sensitive data detected in the sample text.")
     else:
@@ -164,7 +165,7 @@ if __name__ == '__main__':
         if sensitive_data_regex_only:
             print("\nDetected Sensitive Data (Regex Only):")
             for item in sensitive_data_regex_only:
-                print(f'- Text: "{item['text']}", Type: {item['type']}')
+                print(f"- Text: \"{item['text']}\", Type: {item['type']}")
         else:
             print("No sensitive data detected in the regex-only sample text.")
             
@@ -175,6 +176,6 @@ if __name__ == '__main__':
         if sensitive_data_empty:
             print("\nDetected Sensitive Data (Empty Text - should be none):")
             for item in sensitive_data_empty:
-                print(f'- Text: "{item['text']}", Type: {item['type']}')
+                print(f"- Text: \"{item['text']}\", Type: {item['type']}")
         else:
             print("No sensitive data detected in empty text, as expected.")

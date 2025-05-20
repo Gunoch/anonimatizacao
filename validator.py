@@ -1,4 +1,3 @@
-```python
 import transformers
 import re
 
@@ -33,4 +32,3 @@ def validar_anonimizacao(texto_anon: str, max_tokens_input: int = 1000, max_toke
         indicadores.append("telefone")
     # (Opcional: poderíamos usar NER novamente aqui para detectar nomes próprios na saída)
     return texto_gerado, indicadores
-```

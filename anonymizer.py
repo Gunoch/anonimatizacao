@@ -1,4 +1,3 @@
-```python
 from faker import Faker
 
 faker = Faker("pt_BR")
@@ -57,4 +56,3 @@ def anonimizar_texto(textos_paginas: list, itens_sensiveis: dict):
             texto_anon = texto_anon.replace(original, falso)
         textos_anonimizados.append(texto_anon)
     return textos_anonimizados, mapeamento
-```

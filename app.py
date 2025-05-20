@@ -101,7 +101,7 @@ class PDFAnonymizerApp:
             log_entries = []
             for original, fake in mapping_data.items():
                 log_entries.append(f'\"{original}\" -> \"{fake}\"')
-            self.log_text_area.insert("1.0", "\\n".join(log_entries))
+            self.log_text_area.insert("1.0", "\n".join(log_entries))
         else:
             self.log_text_area.insert("1.0", "Nenhuma substituição realizada ou mapeamento não disponível.")
         self.log_text_area.config(state="disabled")
@@ -128,9 +128,9 @@ class PDFAnonymizerApp:
                 # Optionally, extract and show preview of original text here
                 try:
                     temp_original_text_pages = extrair_texto(self.caminho_pdf)
-                    self._update_preview(self.text_original_preview, "\\n".join(temp_original_text_pages))
+                    self._update_preview(self.text_original_preview, "\n".join(temp_original_text_pages))
                 except fitz.fitz.FZ_ERROR_GENERIC as e:
-                    messagebox.showerror("Erro de PDF", f"Não foi possível ler o arquivo PDF (pode estar corrompido ou não ser um PDF válido):\\n{e}")
+                    messagebox.showerror("Erro de PDF", f"Não foi possível ler o arquivo PDF (pode estar corrompido ou não ser um PDF válido):\n{e}")
                     self._update_preview(self.text_original_preview, f"Erro ao pré-visualizar: PDF inválido ou corrompido.")
                     self.caminho_pdf = None # Reset path
                     self.btn_anon.config(state="disabled")
@@ -144,14 +144,14 @@ class PDFAnonymizerApp:
                     self.label_status.config(text="Falha ao carregar PDF. Arquivo não encontrado.")
                     return
                 except Exception as e:
-                    messagebox.showerror("Erro Inesperado", f"Ocorreu um erro inesperado ao carregar o PDF:\\n{e}")
+                    messagebox.showerror("Erro Inesperado", f"Ocorreu um erro inesperado ao carregar o PDF:\n{e}")
                     self._update_preview(self.text_original_preview, f"Erro ao pré-visualizar: {e}")
                     self.caminho_pdf = None # Reset path
                     self.btn_anon.config(state="disabled")
                     self.label_status.config(text="Falha ao carregar PDF.")
                     return
             except Exception as e:
-                messagebox.showerror("Erro Inesperado", f"Ocorreu um erro inesperado ao carregar o PDF:\\n{e}")
+                messagebox.showerror("Erro Inesperado", f"Ocorreu um erro inesperado ao carregar o PDF:\n{e}")
                 self.label_status.config(text="Falha ao carregar PDF.")
                 return
         else:
@@ -214,22 +214,22 @@ class PDFAnonymizerApp:
             # Habilita os botões de validar e reverter pós-anonimização
             self.btn_validar.config(state="normal")
             self.btn_reverter_sessao.config(state="normal")
-            messagebox.showinfo("Concluído", f"Anonimização concluída.\\n{status_msg}")
+            messagebox.showinfo("Concluído", f"Anonimização concluída.\n{status_msg}")
 
         except FileNotFoundError: # Should ideally be caught by carregar_pdf, but as a safeguard
             messagebox.showerror("Erro de Arquivo", f"Arquivo PDF não encontrado: {self.caminho_pdf}")
             self.label_status.config(text="Falha na anonimização: PDF não encontrado.")
             self._update_log_area(None)
         except fitz.fitz.FZ_ERROR_GENERIC as e: # From extrair_texto or salvar_pdf_anon
-            messagebox.showerror("Erro de PDF", f"Erro ao processar o arquivo PDF (pode estar corrompido ou ser um formato não suportado):\\n{e}")
+            messagebox.showerror("Erro de PDF", f"Erro ao processar o arquivo PDF (pode estar corrompido ou ser um formato não suportado):\n{e}")
             self.label_status.config(text="Falha na anonimização: Erro no PDF.")
             self._update_log_area(None)
         except IOError as e: # From save_mapping
-            messagebox.showerror("Erro de Arquivo", f"Erro ao salvar o arquivo de mapeamento:\\n{e}")
+            messagebox.showerror("Erro de Arquivo", f"Erro ao salvar o arquivo de mapeamento:\n{e}")
             self.label_status.config(text="Falha ao salvar mapeamento.")
             # Log might still be relevant if anonymization itself was ok
         except Exception as e:
-            messagebox.showerror("Erro de Anonimização", f"Ocorreu uma falha inesperada durante a anonimização:\\n{e}")
+            messagebox.showerror("Erro de Anonimização", f"Ocorreu uma falha inesperada durante a anonimização:\n{e}")
             self.label_status.config(text="Falha na anonimização.")
             self._update_log_area(None)
     
@@ -253,7 +253,7 @@ class PDFAnonymizerApp:
 
     def _perform_validation(self):
         try:
-            texto_anon_completo = "\\n".join(self.texto_paginas_anon)
+            texto_anon_completo = "\n".join(self.texto_paginas_anon)
             # This call can take time (model loading)
             texto_modelo, indicadores = validar_anonimizacao(texto_anon_completo)
             
@@ -266,14 +266,14 @@ class PDFAnonymizerApp:
     def _update_validation_ui(self, texto_modelo, indicadores, error):
         self._set_ui_busy(False) # Re-enable UI
         if error:
-            messagebox.showerror("Erro de Validação", f"Falha ao validar anonimização:\\n{error}")
+            messagebox.showerror("Erro de Validação", f"Falha ao validar anonimização:\n{error}")
             self.label_status.config(text="Falha na validação.")
         else:
             if not indicadores:
                 messagebox.showinfo("Validação", "Nenhum dado pessoal aparente foi detectado no texto anonimizado.")
             else:
                 msg = "Possível dado pessoal detectado na validação: " + ", ".join(indicadores)
-                msg += "\n(O modelo gerou o seguinte trecho de texto continuando o PDF: ... \"{}\")".format(texto_modelo[:100] + "..." if len(texto_modelo)>100 else texto_modelo)
+                msg += "\n(O modelo gerou o seguinte trecho de texto continuando o PDF: ... \"{}\"{})".format(texto_modelo[:100] + "..." if len(texto_modelo)>100 else texto_modelo)
                 messagebox.showwarning("Validação", msg)
             self.label_status.config(text="Validação concluída.")
         self.validation_thread = None # Clear the thread reference
@@ -416,23 +416,23 @@ class PDFAnonymizerApp:
                 messagebox.showinfo("Reversão", "Texto revertido carregado para visualização.")
 
         except FileNotFoundError as e:
-            messagebox.showerror("Erro de Arquivo", f"Arquivo não encontrado durante a reversão:\\n{e}")
+            messagebox.showerror("Erro de Arquivo", f"Arquivo não encontrado durante a reversão:\n{e}")
             self.label_status.config(text="Erro na reversão: Arquivo não encontrado.")
             self._update_log_area(None)
         except fitz.fitz.FZ_ERROR_GENERIC as e: # From extrair_texto
-            messagebox.showerror("Erro de PDF", f"Erro ao ler o arquivo PDF anonimizado (pode estar corrompido):\\n{e}")
+            messagebox.showerror("Erro de PDF", f"Erro ao ler o arquivo PDF anonimizado (pode estar corrompido):\n{e}")
             self.label_status.config(text="Erro na reversão: Falha ao ler PDF.")
             self._update_log_area(None)
         except json.JSONDecodeError as e: # From load_mapping
-            messagebox.showerror("Erro de Mapeamento", f"Erro ao decodificar o arquivo de mapeamento (JSON inválido):\\n{e}")
+            messagebox.showerror("Erro de Mapeamento", f"Erro ao decodificar o arquivo de mapeamento (JSON inválido):\n{e}")
             self.label_status.config(text="Erro na reversão: JSON de mapeamento inválido.")
             self._update_log_area(None)
         except IOError as e: # From load_mapping or salvar_pdf_anon (if saving reverted)
-            messagebox.showerror("Erro de Arquivo", f"Erro de I/O durante a reversão (leitura/escrita):\\n{e}")
+            messagebox.showerror("Erro de Arquivo", f"Erro de I/O durante a reversão (leitura/escrita):\n{e}")
             self.label_status.config(text="Erro na reversão: Falha de I/O.")
             self._update_log_area(None) # Clear log as state is uncertain
         except Exception as e:
-            messagebox.showerror("Erro na Reversão", f"Ocorreu uma falha inesperada durante a reversão a partir de arquivos:\\n{e}")
+            messagebox.showerror("Erro na Reversão", f"Ocorreu uma falha inesperada durante a reversão a partir de arquivos:\n{e}")
             self.label_status.config(text="Erro na reversão.")
             self._update_log_area(None)
 

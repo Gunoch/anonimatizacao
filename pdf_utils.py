@@ -1,4 +1,3 @@
-```python
 import fitz  # PyMuPDF
 import os
 
@@ -25,4 +24,3 @@ def salvar_pdf_anon(texto_paginas_anonimizado: list, caminho_pdf_original: str):
         pagina.insert_text(fitz.Point(72, 72), texto)
     doc.save(caminho_saida)
     return caminho_saida
-```
