@@ -222,15 +222,12 @@ class PDFAnonymizerApp:
             self._handle_error(str(e), "Erro ao Finalizar")
         finally:
             self._set_ui_busy(False)
-
-    def _handle_error(self, error_msg, title="Erro"):
+      def _handle_error(self, error_msg, title="Erro"):
         """Centraliza tratamento de erros na UI."""
         messagebox.showerror(title, error_msg)
         self.label_status.config(text=f"Ocorreu um erro: {error_msg[:50]}...")
         self.progress["value"] = 0
-        self._set_ui_busy(False)
-
-    def anonimizar(self): # Corrected indentation
+        self._set_ui_busy(False)    def anonimizar(self):
         """Executa a anonimização do PDF selecionado em uma thread separada."""
         if not self.caminho_pdf:
             messagebox.showerror("Erro de Operação", "Nenhum PDF selecionado para anonimizar.")
@@ -243,6 +240,24 @@ class PDFAnonymizerApp:
         # Inicia processo em thread separada
         threading.Thread(target=self._anonimizar_thread, daemon=True).start()
     
+    def _set_ui_busy(self, busy_status: bool):
+        """Helper to enable/disable UI elements during long operations."""
+        state = "disabled" if busy_status else "normal"
+        self.btn_carregar.config(state=state)
+        # Only enable anon if a PDF is loaded and not busy
+        self.btn_anon.config(state=state if self.caminho_pdf else "disabled")
+        # Only enable validate if anonymized text exists and not busy
+        self.btn_validar.config(state=state if self.texto_paginas_anon else "disabled")
+        # Only enable revert session if mapping exists and not busy
+        self.btn_reverter_sessao.config(state=state if self.mapeamento else "disabled")
+        self.btn_carregar_e_reverter.config(state=state)
+        
+        if busy_status:
+            self.progress.start(10) # Indeterminate progress for background tasks
+        else:
+            self.progress.stop()
+            self.progress['value'] = 0 # Reset determinate progress
+
     def _perform_validation(self):
         try:
             texto_anon_completo = "\n".join(self.texto_paginas_anon)
@@ -321,9 +336,7 @@ class PDFAnonymizerApp:
             )
         self.label_status.config(text="Reversão da sessão realizada.")
         # Optionally, update log to indicate reversion if desired, or clear it
-        # self._update_log_area(None) 
-
-    def _processar_reversao_thread(self, caminho_pdf_anon, caminho_mapeamento): # Corrected definition
+        # self._update_log_area(None)     def _processar_reversao_thread(self, caminho_pdf_anon, caminho_mapeamento):
         """Função de thread para processar a reversão."""
         try:
             # Carregar texto e mapeamento
@@ -331,7 +344,7 @@ class PDFAnonymizerApp:
             mapeamento_carregado = load_mapping(caminho_mapeamento)
             
             if not texto_paginas_anon_carregado or not mapeamento_carregado:
-                self.root.after(0, lambda: self._finalizar_reversao(None, None, None, 
+                self.root.after(0, lambda: self._finalizar_reversao(None, None, 
                                 "Erro ao carregar o PDF ou mapeamento. Verifique se os arquivos são válidos."))
                 return
                 
@@ -350,15 +363,9 @@ class PDFAnonymizerApp:
             self.root.after(0, lambda: self._finalizar_reversao(texto_paginas_anon_carregado, 
                                                                texto_paginas_restaurado, 
                                                                mapeamento_carregado, None))
-        except FileNotFoundError as e:
-            self.root.after(0, lambda: self._finalizar_reversao(None, None, None, f"Arquivo não encontrado: {e}"))
-        except json.JSONDecodeError as e:
-            self.root.after(0, lambda: self._finalizar_reversao(None, None, None, f"Erro ao decodificar mapeamento (JSON inválido): {e}"))
-        except IOError as e: # Covers issues from load_mapping or salvar_pdf_anon
-             self.root.after(0, lambda: self._finalizar_reversao(None, None, None, f"Erro de I/O: {e}"))
-        except Exception as e: # Catch-all for other errors during thread execution
-            self.root.after(0, lambda: self._finalizar_reversao(None, None, None, f"Erro inesperado na reversão: {e}"))
-
+        except Exception as e:
+            self.root.after(0, lambda: self._finalizar_reversao(None, None, None, str(e)))
+    
     def _finalizar_reversao(self, texto_paginas_anon_carregado, texto_paginas_restaurado, mapeamento_carregado, error_msg):
         """Finaliza o processo de reversão na thread principal."""
         self._set_ui_busy(False)
@@ -438,6 +445,80 @@ class PDFAnonymizerApp:
         threading.Thread(target=self._processar_reversao_thread, 
                          args=(caminho_pdf_anon, caminho_mapeamento), 
                          daemon=True).start()
+
+            if not texto_paginas_anon_carregado: # extrair_texto might return empty list or raise error
+                # This case is if extrair_texto returns empty without error, actual error caught below
+                messagebox.showerror("Erro de Carga", f"Não foi possível extrair texto de: {os.path.basename(caminho_pdf_anon)}. O arquivo pode estar vazio ou ilegível.")
+                self.label_status.config(text="Erro ao carregar PDF anonimizado.")
+                self._update_log_area(None)
+                return
+            if not mapeamento_carregado: # load_mapping returns None on error
+                # Error message for this is handled by the specific exceptions below if they occurred,
+                # or a general one if it just returned None for other reasons.
+                messagebox.showerror("Erro de Carga", f"Não foi possível carregar o mapeamento de: {os.path.basename(caminho_mapeamento)}. Verifique o console para detalhes.")
+                self.label_status.config(text="Erro ao carregar mapeamento.")
+                self._update_log_area(None)
+                return
+            # Reversão
+            texto_paginas_restaurado = []
+            mapeamento_inverso = {falso: orig for orig, falso in mapeamento_carregado.items()}
+            chaves_falsas = sorted(mapeamento_inverso.keys(), key=len, reverse=True)
+
+            for texto_anon_pagina in texto_paginas_anon_carregado:
+                texto_restaurado_pagina = texto_anon_pagina
+                for falso in chaves_falsas:
+                    original = mapeamento_inverso[falso]
+                    texto_restaurado_pagina = texto_restaurado_pagina.replace(falso, original)
+                texto_paginas_restaurado.append(texto_restaurado_pagina)
+            
+            # Display reverted text in the "anonymized" preview area for simplicity
+            self._update_preview(self.text_original_preview, "\n".join(texto_paginas_anon_carregado)) # Show loaded anon text
+            self._update_preview(self.text_anon_preview, "\n".join(texto_paginas_restaurado)) # Show reverted text
+            self._update_log_area(mapeamento_carregado) # Show the loaded mapping
+
+            self.label_status.config(text="Reversão a partir de arquivos concluída.")
+            
+            # Offer to save the reverted text
+            if messagebox.askyesno("Salvar Reversão", "Deseja salvar o texto revertido em um novo arquivo?"):
+                caminho_salvar_revertido = filedialog.asksaveasfilename(
+                    title="Salvar PDF Revertido",
+                    defaultextension=".pdf",
+                    filetypes=[("Arquivos PDF", "*.pdf"), ("Arquivos de Texto", "*.txt")]
+                )
+                if caminho_salvar_revertido:
+                    if caminho_salvar_revertido.lower().endswith(".pdf"):
+                        salvar_pdf_anon(texto_paginas_restaurado, caminho_salvar_revertido) # Re-using salvar_pdf_anon
+                        messagebox.showinfo("Sucesso", f"PDF revertido salvo em: {os.path.basename(caminho_salvar_revertido)}")
+                    else: # Save as .txt
+                        with open(caminho_salvar_revertido, "w", encoding="utf-8") as f:
+                            f.write("\n".join(texto_paginas_restaurado))
+                        messagebox.showinfo("Sucesso", f"Texto revertido salvo em: {os.path.basename(caminho_salvar_revertido)}")
+                    self.label_status.config(text=f"Texto revertido salvo em: {os.path.basename(caminho_salvar_revertido)}")
+                else:
+                    self.label_status.config(text="Salvamento do texto revertido cancelado.")
+            else:
+                messagebox.showinfo("Reversão", "Texto revertido carregado para visualização.")
+
+        except FileNotFoundError as e:
+            messagebox.showerror("Erro de Arquivo", f"Arquivo não encontrado durante a reversão:\n{e}")
+            self.label_status.config(text="Erro na reversão: Arquivo não encontrado.")
+            self._update_log_area(None)
+        except Exception as e: # Handling PDF extraction errors
+            messagebox.showerror("Erro de PDF", f"Erro ao ler o arquivo PDF anonimizado (pode estar corrompido):\n{e}")
+            self.label_status.config(text="Erro na reversão: Falha ao ler PDF.")
+            self._update_log_area(None)
+        except json.JSONDecodeError as e: # From load_mapping
+            messagebox.showerror("Erro de Mapeamento", f"Erro ao decodificar o arquivo de mapeamento (JSON inválido):\n{e}")
+            self.label_status.config(text="Erro na reversão: JSON de mapeamento inválido.")
+            self._update_log_area(None)
+        except IOError as e: # From load_mapping or salvar_pdf_anon (if saving reverted)
+            messagebox.showerror("Erro de Arquivo", f"Erro de I/O durante a reversão (leitura/escrita):\n{e}")
+            self.label_status.config(text="Erro na reversão: Falha de I/O.")
+            self._update_log_area(None) # Clear log as state is uncertain
+        except Exception as e:
+            messagebox.showerror("Erro na Reversão", f"Ocorreu uma falha inesperada durante a reversão a partir de arquivos:\n{e}")
+            self.label_status.config(text="Erro na reversão.")
+            self._update_log_area(None)
 
 if __name__ == "__main__":
     root = tk.Tk()
