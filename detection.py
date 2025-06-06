@@ -25,30 +25,53 @@ class ImprovedPIIDetector:
         self.regex_patterns = {name: re.compile(pattern) for name, pattern in REGEX_PATTERNS.items()}
         self.entity_counters = {entity_type: 0 for entity_type in ENTITY_TYPES.values()}
         self._load_model()
+        self._load_custom_patterns()
     
     def _load_model(self):
         """Load and configure the spaCy model with EntityRuler."""
         try:
             # Load spaCy model
             self.nlp = spacy.load(SPACY_CONFIG['model'])
-            
+
             # Disable unnecessary pipes for better performance
             disabled_pipes = SPACY_CONFIG.get('disable_pipes', [])
             for pipe_name in disabled_pipes:
                 if pipe_name in self.nlp.pipe_names:
                     self.nlp.disable_pipes(pipe_name)
-            
+
             # Add EntityRuler before the NER component
             if 'entity_ruler' not in self.nlp.pipe_names:
-                self.entity_ruler = EntityRuler(self.nlp, patterns=ENTITY_RULER_PATTERNS)
-                self.nlp.add_pipe(self.entity_ruler, before='ner')
-            
+                self.entity_ruler = self.nlp.add_pipe('entity_ruler', before='ner')
+            else:
+                self.entity_ruler = self.nlp.get_pipe('entity_ruler')
+
+            self.entity_ruler.add_patterns(ENTITY_RULER_PATTERNS)
+
             logger.info("spaCy model loaded successfully with EntityRuler")
-            
+
         except OSError:
             logger.error("spaCy model 'pt_core_news_sm' not found. Please download it by running:")
             logger.error("python -m spacy download pt_core_news_sm")
             self.nlp = None
+
+    def _load_custom_patterns(self) -> None:
+        """Load custom regex patterns from 'custom_patterns.json' if available."""
+        import json
+        import os
+
+        patterns_file = 'custom_patterns.json'
+        if not os.path.exists(patterns_file):
+            return
+
+        try:
+            with open(patterns_file, 'r', encoding='utf-8') as f:
+                custom_patterns = json.load(f)
+
+            for name, pattern in custom_patterns.items():
+                self.regex_patterns[name] = re.compile(pattern)
+                logger.info(f"Loaded custom regex pattern: {name}")
+        except Exception as e:
+            logger.error(f"Failed to load custom patterns: {e}")
 
     def _is_stop_term(self, text: str) -> bool:
         """Check if a term is in the stop-terms list."""
@@ -201,71 +224,6 @@ PII_TYPES = {
     "MISC": "MISC"
 }
 
-def detect_sensitive_data(text: str) -> list[dict[str, str]]:
-    """
-    Detects sensitive data (PII) in a given text using spaCy NER and regular expressions.
-
-    Args:
-        text: The input text to analyze.
-
-    Returns:
-        A list of dictionaries, where each dictionary represents a detected sensitive item
-        and contains 'text' (the detected string) and 'type' (the PII type).
-        Returns an empty list if no sensitive data is found or if nlp model is not loaded.
-    """
-    if nlp is None:
-        print("spaCy model not loaded. Cannot perform NER.")
-        return []
-
-    detected_items = []
-    processed_texts = set() # To avoid duplicate entries of the exact same text span
-
-    # 1. Named Entity Recognition (NER) with spaCy
-    doc = nlp(text)
-    for ent in doc.ents:
-        if ent.label_ in ["PER", "LOC", "ORG", "MISC"]:
-            # Ensure we don't add empty or whitespace-only entities
-            if ent.text.strip() and ent.text not in processed_texts:
-                detected_items.append({"text": ent.text, "type": PII_TYPES.get(ent.label_, ent.label_)})
-                processed_texts.add(ent.text)
-
-    # 2. Regular Expressions for PII
-    # CPF
-    for match in re.finditer(CPF_REGEX, text):
-        cpf = match.group(0)
-        if cpf not in processed_texts:
-            detected_items.append({"text": cpf, "type": PII_TYPES["CPF"]})
-            processed_texts.add(cpf)
-            
-    # Telefones
-    for match in re.finditer(PHONE_REGEX, text):
-        phone = match.group(0)
-        if phone not in processed_texts:
-            detected_items.append({"text": phone, "type": PII_TYPES["TELEFONE"]})
-            processed_texts.add(phone)
-
-    # E-mails
-    for match in re.finditer(EMAIL_REGEX, text):
-        email = match.group(0)
-        if email not in processed_texts:
-            detected_items.append({"text": email, "type": PII_TYPES["EMAIL"]})
-            processed_texts.add(email)
-            
-    # 3. Unification of Results (handled by processed_texts set for basic deduplication)
-    # More sophisticated deduplication might be needed if spaCy and regex overlap
-    # e.g. spaCy identifies "email@example.com" as MISC and regex identifies it as EMAIL.
-    # For now, we accept both if their text representation is slightly different or if one is a substring of another.
-    # A more robust approach would be to check for overlapping spans.
-
-    # A simple way to further remove duplicates that might have different types but same text
-    final_detected_items = []
-    seen_texts_for_final_list = set()
-    for item in detected_items:
-        if item["text"] not in seen_texts_for_final_list:
-            final_detected_items.append(item)
-            seen_texts_for_final_list.add(item["text"])
-            
-    return final_detected_items
 
 def encontrar_dados_sensiveis(textos_paginas: List[str]) -> Dict[str, str]:
     """
