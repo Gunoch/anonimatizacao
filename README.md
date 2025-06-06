@@ -1,10 +1,10 @@
 # PDF Anonymizer (Anonimizador de PDF)
 
-Um aplicativo desktop em Python para anonimização de documentos PDF contendo dados pessoais em português.
+Um aplicativo desktop em Python para anonimizar documentos PDF contendo dados pessoais em português.
 
 ## Funcionalidades
 
-- Detecção e anonimização de dados pessoais sensíveis (nomes, CPFs, emails, telefones, etc.)
+- Detecção e anonimização de dados pessoais sensíveis (nomes, CPFs, emails, telefones etc.)
 - Interface gráfica amigável utilizando Tkinter
 - Preservação de mapeamentos para possível reversão da anonimização
 - Validação da qualidade da anonimização utilizando modelos de linguagem
@@ -12,9 +12,9 @@ Um aplicativo desktop em Python para anonimização de documentos PDF contendo d
 
 ## Documentação
 
-- [Instalação detalhada](INSTALLATION.md) - Guia completo para configurar o aplicativo
-- [Resolução de problemas](TROUBLESHOOTING.md) - Soluções para problemas comuns
-- [Problemas e melhorias](issues_and_improvements.md) - Status do projeto e melhorias planejadas
+- [Instalação detalhada](INSTALLATION.md) – guia completo para configurar o aplicativo
+- [Resolução de problemas](TROUBLESHOOTING.md) – soluções para problemas comuns
+- [Problemas e melhorias](issues_and_improvements.md) – status do projeto e melhorias planejadas
 
 ## Instalação Rápida
 
@@ -37,21 +37,21 @@ python main.py
 
 ## Como Usar
 
-1. Clique em "Carregar PDF" para selecionar um documento PDF
-2. Clique em "Anonimizar" para iniciar o processo de detecção e anonimização
-3. Após a conclusão, o documento anonimizado será salvo automaticamente
-4. Use "Validar" para verificar se todos os dados pessoais foram corretamente anonimizados
-5. Use "Reverter Sessão" para desfazer a anonimização atual ou "Carregar e Reverter" para desfazer uma anonimização anterior
+1. Clique em "Carregar PDF" para selecionar um documento.
+2. Clique em "Anonimizar" para iniciar o processo de detecção e anonimização.
+3. Ao final, o documento anonimizado será salvo automaticamente.
+4. Use "Validar" para verificar se todos os dados pessoais foram corretamente anonimizados.
+5. Use "Reverter Sessão" para desfazer a anonimização atual ou "Carregar e Reverter" para desfazer uma sessão anterior.
 
 ## Arquitetura da Aplicação
 
-- `main.py`: Ponto de entrada da aplicação
-- `app.py`: Interface gráfica principal e lógica da aplicação
-- `pdf_utils.py`: Funções para manipulação de PDFs
-- `detection.py`: Lógica de detecção de dados sensíveis
-- `anonymizer.py`: Lógica de anonimização
-- `validator.py`: Validação da qualidade de anonimização
-- `mapping_utils.py`: Gerenciamento dos mapeamentos de anonimização
+- `main.py`: ponto de entrada da aplicação
+- `app.py`: interface gráfica principal e lógica da aplicação
+- `pdf_utils.py`: funções para manipulação de PDFs
+- `detection.py`: lógica de detecção de dados sensíveis
+- `anonymizer.py`: lógica de anonimização
+- `validator.py`: validação da qualidade de anonimização
+- `mapping_utils.py`: gerenciamento dos mapeamentos de anonimização
 
 ## Testes e Validação
 
@@ -74,8 +74,8 @@ Os relatórios de teste são gerados como PDFs com visualizações e análises e
 
 - Suporta apenas texto extraível de PDFs (não realiza OCR em imagens)
 - Otimizado para dados pessoais em português do Brasil
-- Pode ter dificuldades com formatos complexos ou não-padronizados
+- Pode ter dificuldades com formatos complexos ou não padronizados
 
 ## Contribuição
 
-Contribuições são bem-vindas! Por favor, sinta-se à vontade para enviar pull requests ou reportar problemas.
+Contribuições são bem-vindas! Sinta-se à vontade para enviar pull requests ou reportar problemas.
