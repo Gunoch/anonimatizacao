@@ -1,11 +1,5 @@
 #!/usr/bin/env python
-# filepath: c:\Users\gusta\OneDrive\Documentos\' Ctrl play\Anonimatizacao\run_tests.py
-"""
-Wrapper script to easily run anonymization tests with various options.
-"""
-
-print("run_tests.py started successfully!") # ADD THIS LINE
-import sys # ADD THIS LINE
+# Wrapper script to easily run anonymization tests with various options.
 
 import os
 import sys
@@ -33,27 +27,25 @@ def main():
     # Determine test parameters based on type
     if args.type == 'quick':
         print("Running quick test (3 PDFs, varied complexity)...")
-        cmd = ["python", "test_utils.py", "--mode", "batch", "--count", "3", "--output", output_dir]
-        
+        count = 3
     elif args.type == 'thorough':
         print("Running thorough test (10 PDFs, all complexities)...")
-        cmd = ["python", "test_utils.py", "--mode", "batch", "--count", "10", "--output", output_dir]
-        
-    elif args.type == 'performance':
+        count = 10
+    else:  # performance
         print("Running performance test (5 PDFs with high complexity)...")
-        # Generate custom high-complexity PDFs for performance testing
-        test_pdfs = []
-        for i in range(5):
-            pages = (i+1) * 5  # 5, 10, 15, 20, 25 pages
-            pdf_path = os.path.join(output_dir, f"perf_test_{pages}p.pdf")
-            
-            # Call test_utils to generate a performance test PDF
-            gen_cmd = ["python", "test_utils.py", "--mode", "generate", "--output", output_dir]
-            subprocess.run(gen_cmd)
-            
-            # Now test each generated PDF
-            cmd = ["python", "test_utils.py", "--mode", "batch", "--count", "5", "--output", output_dir]
-    
+        count = 5
+
+    cmd = [
+        "python",
+        "test_utils.py",
+        "--mode",
+        "batch",
+        "--count",
+        str(count),
+        "--output",
+        output_dir,
+    ]
+
     # Run the selected test
     subprocess.run(cmd)
     
