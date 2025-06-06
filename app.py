@@ -4,13 +4,19 @@ import os # Added for os.path.basename
 import json # For json.JSONDecodeError
 import fitz # PyMuPDF module for PDF handling
 import threading # For asynchronous operations
+import logging
 
 # Importa funções dos módulos criados
 from pdf_utils import extrair_texto, salvar_pdf_anon
-from detection import encontrar_dados_sensiveis
-from anonymizer import anonimizar_texto
+from detection import encontrar_dados_sensiveis, detector
+from anonymizer import anonimizar_texto, anonymizer
 from validator import validar_anonimizacao
 from mapping_utils import save_mapping, load_mapping # Added
+from config import SUBSTITUTION_CONFIG, VALIDATION_CONFIG, ERROR_MESSAGES
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class PDFAnonymizerApp:
     def __init__(self, root):
@@ -152,8 +158,8 @@ class PDFAnonymizerApp:
                     return
             except Exception as e:
                 messagebox.showerror("Erro Inesperado", f"Ocorreu um erro inesperado ao carregar o PDF:\n{e}")
-                self.label_status.config(text="Falha ao carregar PDF.")
-                return
+                            self.label_status.config(text="Falha ao carregar PDF.")
+            return
         else:
             # Se nenhum arquivo foi selecionado, não faz nada
             return
@@ -177,16 +183,33 @@ class PDFAnonymizerApp:
             self.texto_paginas_original = extrair_texto(self.caminho_pdf)
             self.root.after(0, lambda: self._update_preview(self.text_original_preview, "\n".join(self.texto_paginas_original)))
             self.root.after(0, lambda: self.progress.config(value=20))
-            self.root.after(0, lambda: self.label_status.config(text="Texto extraído. Detectando dados sensíveis..."))
+            self.root.after(0, lambda: self.label_status.config(text="Texto extraído. Detectando dados sensíveis (método melhorado)..."))
             
-            # 2. Detecção de dados sensíveis
-            itens_sensiveis = encontrar_dados_sensiveis(self.texto_paginas_original)
+            # 2. Detecção de dados sensíveis usando detector melhorado
+            logger.info("Iniciando detecção de PII com método melhorado")
+            itens_sensiveis = detector.detect_from_texts(self.texto_paginas_original)
             total_encontrados = len(itens_sensiveis)
-            self.root.after(0, lambda: self.progress.config(value=40))
-            self.root.after(0, lambda: self.label_status.config(text=f"{total_encontrados} dado(s) sensível(is) identificado(s). Anonimizando..."))
+            logger.info(f"Detectados {total_encontrados} dados sensíveis únicos")
             
-            # 3. Anonimização do texto
-            self.texto_paginas_anon, self.mapeamento = anonimizar_texto(self.texto_paginas_original, itens_sensiveis)
+            self.root.after(0, lambda: self.progress.config(value=40))
+            self.root.after(0, lambda: self.label_status.config(text=f"{total_encontrados} dado(s) sensível(is) identificado(s). Anonimizando com placeholders..."))
+            
+            # 3. Anonimização do texto usando anonymizer melhorado
+            logger.info("Iniciando anonimização com substitutos baseados em placeholders")
+            self.texto_paginas_anon, self.mapeamento = anonymizer.anonymize_texts(self.texto_paginas_original, itens_sensiveis)
+            
+            # Validação pós-anonimização
+            validation_results = anonymizer.validate_anonymization(
+                self.texto_paginas_original, 
+                self.texto_paginas_anon, 
+                self.mapeamento
+            )
+            
+            if validation_results['warnings']:
+                logger.warning(f"Avisos de validação: {validation_results['warnings']}")
+            
+            logger.info(f"Anonimização concluída. Estatísticas: {validation_results['stats']}")
+            
             self.root.after(0, lambda: self._update_preview(self.text_anon_preview, "\n".join(self.texto_paginas_anon)))
             self.root.after(0, lambda: self.progress.config(value=60))
             self.root.after(0, lambda: self.label_status.config(text="Texto anonimizado. Salvando arquivos..."))
@@ -199,6 +222,7 @@ class PDFAnonymizerApp:
             self.root.after(0, self._finalizar_anonimizacao)
             
         except Exception as e:
+            logger.error(f"Erro na anonimização: {str(e)}")
             self.root.after(0, lambda: self._handle_error(str(e), "Erro na Anonimização"))
             
     def _finalizar_anonimizacao(self):
