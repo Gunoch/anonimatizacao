@@ -25,30 +25,53 @@ class ImprovedPIIDetector:
         self.regex_patterns = {name: re.compile(pattern) for name, pattern in REGEX_PATTERNS.items()}
         self.entity_counters = {entity_type: 0 for entity_type in ENTITY_TYPES.values()}
         self._load_model()
+        self._load_custom_patterns()
     
     def _load_model(self):
         """Load and configure the spaCy model with EntityRuler."""
         try:
             # Load spaCy model
             self.nlp = spacy.load(SPACY_CONFIG['model'])
-            
+
             # Disable unnecessary pipes for better performance
             disabled_pipes = SPACY_CONFIG.get('disable_pipes', [])
             for pipe_name in disabled_pipes:
                 if pipe_name in self.nlp.pipe_names:
                     self.nlp.disable_pipes(pipe_name)
-            
+
             # Add EntityRuler before the NER component
             if 'entity_ruler' not in self.nlp.pipe_names:
-                self.entity_ruler = EntityRuler(self.nlp, patterns=ENTITY_RULER_PATTERNS)
-                self.nlp.add_pipe(self.entity_ruler, before='ner')
-            
+                self.entity_ruler = self.nlp.add_pipe('entity_ruler', before='ner')
+            else:
+                self.entity_ruler = self.nlp.get_pipe('entity_ruler')
+
+            self.entity_ruler.add_patterns(ENTITY_RULER_PATTERNS)
+
             logger.info("spaCy model loaded successfully with EntityRuler")
-            
+
         except OSError:
             logger.error("spaCy model 'pt_core_news_sm' not found. Please download it by running:")
             logger.error("python -m spacy download pt_core_news_sm")
             self.nlp = None
+
+    def _load_custom_patterns(self) -> None:
+        """Load custom regex patterns from 'custom_patterns.json' if available."""
+        import json
+        import os
+
+        patterns_file = 'custom_patterns.json'
+        if not os.path.exists(patterns_file):
+            return
+
+        try:
+            with open(patterns_file, 'r', encoding='utf-8') as f:
+                custom_patterns = json.load(f)
+
+            for name, pattern in custom_patterns.items():
+                self.regex_patterns[name] = re.compile(pattern)
+                logger.info(f"Loaded custom regex pattern: {name}")
+        except Exception as e:
+            logger.error(f"Failed to load custom patterns: {e}")
 
     def _is_stop_term(self, text: str) -> bool:
         """Check if a term is in the stop-terms list."""
