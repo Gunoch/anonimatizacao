@@ -59,7 +59,8 @@ class ImprovedPIIDetector:
         import json
         import os
 
-        patterns_file = 'custom_patterns.json'
+        from config import CUSTOM_PATTERNS_FILE
+        patterns_file = CUSTOM_PATTERNS_FILE
         if not os.path.exists(patterns_file):
             return
 
