@@ -79,3 +79,8 @@ Os relatórios de teste são gerados como PDFs com visualizações e análises e
 ## Contribuição
 
 Contribuições são bem-vindas! Sinta-se à vontade para enviar pull requests ou reportar problemas.
+
+### Dicas para Desenvolvedores
+
+- Utilize o arquivo `.gitignore` incluído no repositório para evitar que arquivos
+  temporários (como pastas `__pycache__` e resultados de teste) sejam versionados.
