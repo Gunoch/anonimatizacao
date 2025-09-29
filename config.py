@@ -70,6 +70,9 @@ REGEX_PATTERNS = {
     'cnpj': r'\b\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}\b'
 }
 
+# Arquivo opcional contendo padrões regex adicionais
+CUSTOM_PATTERNS_FILE = "custom_patterns.json"
+
 # Configurações de substituição
 SUBSTITUTION_CONFIG = {
     'use_placeholders': True,  # Se True, usa placeholders; se False, usa Faker
